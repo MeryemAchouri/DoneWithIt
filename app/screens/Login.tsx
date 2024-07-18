@@ -14,6 +14,7 @@ import { useNavigation } from "@react-navigation/native";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { FIREBASE_AUTH } from "../../FireBaseConf";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { COLOR } from "../styles/style";
 
 const logo = require("../../assets/images/logo.png");
 
@@ -27,7 +28,7 @@ const Login = () => {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
-        navigation.replace("MainApp");
+       (navigation as any).replace("MainApp");
       }
     });
 
@@ -113,10 +114,10 @@ const styles = StyleSheet.create({
     margin: 10,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#EFECEC",
+    backgroundColor: COLOR.inputsColor,
     borderRadius: 20,
     paddingHorizontal: 10,
-    width: 350,
+    width:"100%",
     height: 50,
   },
   icon: {
@@ -130,7 +131,7 @@ const styles = StyleSheet.create({
     padding: 5,
     width: 350,
     height: 50,
-    backgroundColor: "#fc5c65",
+    backgroundColor: COLOR.primary,
     borderRadius: 20,
     marginTop: 20,
     marginBottom: 20,

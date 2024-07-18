@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -7,31 +7,65 @@ import {
   TouchableOpacity,
   SafeAreaView,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useIsFocused } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/MaterialIcons";
-import { FIREBASE_AUTH } from "../FireBaseConf";
+import { FIREBASE_AUTH, FIRESTORE_DB } from "../../FireBaseConf";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { COLOR } from "../styles/style";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+type RootStackParamList = {
+  WelcomeScreen: undefined;
+  "My Listings": undefined;
+  "My Messages": undefined;
+};
 
-
-
+declare global {
+  namespace ReactNavigation {
+    interface RootParamList extends RootStackParamList {}
+  }
+}
 const Account = () => {
-      const navigation = useNavigation(); 
-      const auth = FIREBASE_AUTH;
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const auth = FIREBASE_AUTH;
+  const isFocused = useIsFocused();
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
 
-      const HandleLogOut = () => {
-        auth
-          .signOut()
-          .then(() => {
-            navigation.replace("WelcomeScreen");
-          })
-          .catch((error) => {
-            console.error(error);
-          });
-      };
+  useEffect(() => {
+    const fetchUnreadMessagesCount = async () => {
+      if (!auth.currentUser) return;
+
+      try {
+        const q = query(
+          collection(FIRESTORE_DB, "Messages"),
+          where("recipientId", "==", auth.currentUser.uid)
+        );
+        const querySnapshot = await getDocs(q);
+        setUnreadMessagesCount(querySnapshot.size);
+      } catch (error) {
+        console.error("Error fetching unread messages count: ", error);
+      }
+    };
+
+    fetchUnreadMessagesCount();
+  }, [auth.currentUser, isFocused]);
+
+  const HandleLogOut = () => {
+    auth
+      .signOut()
+      .then(() => {
+        navigation.replace("WelcomeScreen");
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  };
+
   return (
     <SafeAreaView style={styles.background}>
       <View style={styles.profileContainer}>
         <Image
-          source={require("../assets/images/profil.png")}
+          source={require("../../assets/images/profil.png")}
           style={styles.image}
         />
         <View style={styles.textContainer}>
@@ -63,6 +97,11 @@ const Account = () => {
       >
         <View style={styles.iconMsgContainer}>
           <Icon name="mail" style={styles.Msgicon} />
+          {unreadMessagesCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{unreadMessagesCount}</Text>
+            </View>
+          )}
         </View>
         <Text style={styles.listingText}>My Messages</Text>
         <Icon name="keyboard-arrow-right" style={styles.arrowIcon} />
@@ -78,8 +117,6 @@ const Account = () => {
     </SafeAreaView>
   );
 };
-
-export default Account;
 
 const styles = StyleSheet.create({
   background: {
@@ -124,7 +161,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   iconListContainer: {
-    backgroundColor: "#fc5c65",
+    backgroundColor: COLOR.primary,
     borderRadius: 25,
     width: 40,
     height: 40,
@@ -159,12 +196,29 @@ const styles = StyleSheet.create({
     fontSize: 25,
   },
   iconMsgContainer: {
-    backgroundColor: "#4ecdc4",
+    backgroundColor: COLOR.secondary,
     borderRadius: 25,
     width: 40,
     height: 40,
     justifyContent: "center",
     alignItems: "center",
+    position: "relative", // Position relative for badge positioning
+  },
+  badge: {
+    position: "absolute",
+    top: -5,
+    right: -5,
+    backgroundColor: "red",
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  badgeText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold",
   },
   LogOutContainer: {
     marginTop: 80,
@@ -192,3 +246,5 @@ const styles = StyleSheet.create({
     height: 5,
   },
 });
+
+export default Account;

@@ -15,7 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { FIREBASE_AUTH, FIRESTORE_DB } from "../../FireBaseConf";
-
+import { COLOR } from "../styles/style";
 const Listings = () => {
   const auth = FIREBASE_AUTH;
   const [photos, setPhotos] = useState<string[]>([]);
@@ -75,26 +75,35 @@ const Listings = () => {
       return;
     }
 
+    const SellerId = auth.currentUser?.uid;
+
     try {
-      await addDoc(collection(FIRESTORE_DB, "Categories"), {
+      const docRef = await addDoc(collection(FIRESTORE_DB, "Categories"), {
         photos,
         title,
         price,
         category,
         description,
         sellerName,
+        SellerId,
         createdAt: serverTimestamp(),
       });
+
+      console.log("Document written with ID: ", docRef.id); // Log document ID for debugging
       alert("Item posted successfully!");
+
+      // Reset form fields after successful posting
       setPhotos([]);
       setTitle("");
       setPrice("");
       setCategory("");
       setDescription("");
     } catch (error: any) {
+      console.error("Error posting item: ", error);
       alert("Error posting item: " + error.message);
     }
   };
+
 
   return (
     <View style={styles.container}>
@@ -227,7 +236,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 20,
-    backgroundColor: "#EFECEC",
+    backgroundColor: COLOR.inputsColor,
     marginRight: 10,
   },
   imageList: {
@@ -244,7 +253,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#EFECEC",
+    backgroundColor: COLOR.inputsColor,
     borderRadius: 30,
     paddingHorizontal: 10,
     paddingVertical: 10,
@@ -257,7 +266,7 @@ const styles = StyleSheet.create({
 
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#EFECEC",
+    backgroundColor: COLOR.inputsColor,
     borderRadius: 30,
     paddingHorizontal: 10,
     paddingVertical: 10,
@@ -269,7 +278,7 @@ const styles = StyleSheet.create({
     margin: 5,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#EFECEC",
+    backgroundColor: COLOR.inputsColor,
     borderRadius: 30,
     paddingHorizontal: 10,
     paddingVertical: 10,

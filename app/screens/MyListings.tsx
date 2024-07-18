@@ -6,12 +6,21 @@ import {
   FlatList,
   Image,
   TouchableOpacity,
+  ListRenderItem,
 } from "react-native";
 import { collection, query, where, getDocs } from "firebase/firestore";
-import { FIRESTORE_DB, FIREBASE_AUTH } from "../../FireBaseConf"; 
+import { FIRESTORE_DB, FIREBASE_AUTH } from "../../FireBaseConf";
+import { COLOR } from "../styles/style";
 
-const MyListings = () => {
-  const [userListings, setUserListings] = useState([]);
+interface Listing {
+  id: string;
+  title: string;
+  price: number;
+  photos: string[];
+}
+
+const MyListings: React.FC = () => {
+  const [userListings, setUserListings] = useState<Listing[]>([]);
 
   useEffect(() => {
     const fetchUserListings = async () => {
@@ -28,7 +37,7 @@ const MyListings = () => {
         const listings = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
-        }));
+        })) as Listing[];
         setUserListings(listings);
       } catch (error) {
         console.error("Error fetching user listings:", error);
@@ -38,7 +47,7 @@ const MyListings = () => {
     fetchUserListings();
   }, []);
 
-  const renderItem = ({ item }) => (
+  const renderItem: ListRenderItem<Listing> = ({ item }) => (
     <TouchableOpacity style={styles.imageContainer}>
       <Image source={{ uri: item.photos[0] }} style={styles.image} />
       <View style={styles.imageTextContainer}>
@@ -54,7 +63,7 @@ const MyListings = () => {
         data={userListings}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        contentContainerStyle={styles.scrollViewContainer} // Added contentContainerStyle
+        contentContainerStyle={styles.scrollViewContainer}
       />
     </View>
   );
@@ -100,7 +109,7 @@ const styles = StyleSheet.create({
     paddingBottom: 5,
   },
   imagePrice: {
-    color: "#4ecdc4",
+    color: COLOR.secondary,
     fontSize: 14,
   },
 });

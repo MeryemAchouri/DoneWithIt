@@ -7,6 +7,7 @@ import {
   View,
   TouchableOpacity,
 } from "react-native";
+import { COLOR } from "../styles/style";
 import { StackNavigationProp } from "@react-navigation/stack";
 
 type WelcomeScreenProps = {
@@ -48,13 +49,13 @@ const styles = StyleSheet.create({
   loginButton: {
     width: "100%",
     height: 70,
-    backgroundColor: "#fc5c65",
+    backgroundColor: COLOR.primary,
     justifyContent: "center",
   },
   RegisterButton: {
     width: "100%",
     height: 70,
-    backgroundColor: "#4ecdc4",
+    backgroundColor: COLOR.secondary,
     justifyContent: "center",
   },
   logoContainer: {

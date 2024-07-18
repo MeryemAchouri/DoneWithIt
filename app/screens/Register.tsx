@@ -13,6 +13,7 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import { useNavigation } from "@react-navigation/native";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { FIREBASE_AUTH } from "../../FireBaseConf";
+import { COLOR } from "../styles/style";
 
 const logo = require("../../assets/images/logo.png");
 
@@ -27,7 +28,7 @@ const Register = () => {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
-        navigation.replace("MainApp");
+       (navigation as any).replace("MainApp");
       }
     });
 
@@ -137,7 +138,7 @@ const styles = StyleSheet.create({
     margin: 10,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#EFECEC",
+    backgroundColor: COLOR.inputsColor,
     borderRadius: 50,
     paddingHorizontal: 10,
     width: 350,
@@ -154,7 +155,7 @@ const styles = StyleSheet.create({
     padding: 5,
     width: 350,
     height: 50,
-    backgroundColor: "#fc5c65",
+    backgroundColor: COLOR.primary,
     borderRadius: 50,
     marginTop: 20,
     marginBottom: 20,

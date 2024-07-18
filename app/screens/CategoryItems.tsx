@@ -12,10 +12,17 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { FIRESTORE_DB } from "../../FireBaseConf";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+  serverTimestamp,
+} from "firebase/firestore";
+import { FIRESTORE_DB, FIREBASE_AUTH } from "../../FireBaseConf";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-
+import { COLOR } from "../styles/style";
 interface Items {
   id: string;
   photos: string[];
@@ -23,6 +30,7 @@ interface Items {
   price: string;
   sellerName: string;
   category: string;
+  SellerId: string; 
 }
 
 interface Props {
@@ -34,6 +42,8 @@ const CategoryItems: React.FC<Props> = ({ category }) => {
   const [selectedItem, setSelectedItem] = useState<Items | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [messageSent, setMessageSent] = useState(false);
+  const [message, setMessage] = useState("Is this still available?");
+  const auth = FIREBASE_AUTH;
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -43,10 +53,14 @@ const CategoryItems: React.FC<Props> = ({ category }) => {
           where("category", "==", category)
         );
         const querySnapshot = await getDocs(q);
-        const itemsData: Items[] = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Items[];
+        const itemsData: Items[] = querySnapshot.docs.map((doc) => {
+          const data = doc.data();
+          console.log("Retrieved data: ", data); 
+          return {
+            id: doc.id,
+            ...data,
+          };
+        }) as Items[];
         setItems(itemsData);
       } catch (error) {
         console.error(`Error fetching ${category}: `, error);
@@ -57,6 +71,7 @@ const CategoryItems: React.FC<Props> = ({ category }) => {
   }, [category]);
 
   const handleItemPress = (item: Items) => {
+    console.log("Item selected:", item);
     setSelectedItem(item);
     setModalVisible(true);
   };
@@ -67,8 +82,41 @@ const CategoryItems: React.FC<Props> = ({ category }) => {
     setMessageSent(false);
   };
 
-  const handleContactSeller = () => {
-    setMessageSent(true);
+  const handleContactSeller = async () => {
+    if (!auth.currentUser) {
+      console.error("User is not authenticated.");
+      return;
+    }
+
+    if (!selectedItem) {
+      console.error("No item selected.");
+      return;
+    }
+
+    if (!selectedItem.SellerId) {
+      console.error("Selected item does not have a sellerId.");
+      return;
+    }
+
+   const messageData = {
+     senderId: auth.currentUser.uid,
+     senderName: auth.currentUser.displayName,
+     recipientId: selectedItem.SellerId, 
+     message: message,
+     timestamp: serverTimestamp(),
+   };
+
+   try {
+     await addDoc(collection(FIRESTORE_DB, "Messages"), messageData);
+     setMessageSent(true);
+     console.log("Message sent successfully.");
+     setTimeout(()=>{
+      setMessage("Is this still available?");
+     },3000)
+   } catch (error) {
+     console.error("Error sending message: ", error);
+   }
+
   };
 
   return (
@@ -102,7 +150,7 @@ const CategoryItems: React.FC<Props> = ({ category }) => {
                 <Ionicons name="close" size={25} color="#fff" />
               </TouchableOpacity>
               <KeyboardAwareScrollView
-                contentContainerStyle={styles.modalContent}
+                
               >
                 <Image
                   source={{ uri: selectedItem.photos[0] }}
@@ -132,7 +180,8 @@ const CategoryItems: React.FC<Props> = ({ category }) => {
                   )}
                   <TextInput
                     style={styles.contactInput}
-                    value="Is this still available?"
+                    value={message}
+                    onChangeText={setMessage}
                   />
                   <TouchableOpacity
                     style={styles.contactButton}
@@ -158,7 +207,6 @@ const styles = StyleSheet.create({
   },
   scrollViewContainer: {
     flexGrow: 1,
-    alignItems: "center",
     paddingBottom: 20,
   },
   imageContainer: {
@@ -189,7 +237,7 @@ const styles = StyleSheet.create({
     paddingBottom: 5,
   },
   imagePrice: {
-    color: "#4ecdc4",
+    color: COLOR.secondary,
     fontSize: 14,
   },
   modalBackground: {
@@ -214,9 +262,7 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     zIndex: 1,
   },
-  modalContent: {
-    textAlign: "left",
-  },
+
   modalImage: {
     width: "100%",
     height: 300,
@@ -230,7 +276,7 @@ const styles = StyleSheet.create({
   modalPrice: {
     marginLeft: 20,
     fontSize: 20,
-    color: "#4ecdc4",
+    color: COLOR.secondary,
     marginBottom: 30,
   },
   profileContainer: {
@@ -270,7 +316,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   contactButton: {
-    backgroundColor: "#fc5c65",
+    backgroundColor: COLOR.primary,
     padding: 15,
     borderRadius: 25,
     width: "90%",
