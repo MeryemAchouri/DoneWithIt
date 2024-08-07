@@ -65,7 +65,7 @@ const Account = () => {
     <SafeAreaView style={styles.background}>
       <View style={styles.profileContainer}>
         <Image
-          source={require("../../assets/images/profil.png")}
+          source={require("../../assets/images/profile.png")}
           style={styles.image}
         />
         <View style={styles.textContainer}>

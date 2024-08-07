@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+
 import {
   Image,
   StyleSheet,
@@ -10,12 +11,14 @@ import {
   Modal,
   Pressable,
 } from "react-native";
+
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { FIREBASE_AUTH, FIRESTORE_DB } from "../../FireBaseConf";
 import { COLOR } from "../styles/style";
+
 const Listings = () => {
   const auth = FIREBASE_AUTH;
   const [photos, setPhotos] = useState<string[]>([]);
@@ -64,6 +67,7 @@ const Listings = () => {
     }
   };
 
+
   const handleCategorySelect = (selectedCategory: string) => {
     setCategory(selectedCategory);
     setModalVisible(false);
@@ -88,7 +92,7 @@ const Listings = () => {
         SellerId,
         createdAt: serverTimestamp(),
       });
-
+   
       console.log("Document written with ID: ", docRef.id); // Log document ID for debugging
       alert("Item posted successfully!");
 
@@ -103,7 +107,6 @@ const Listings = () => {
       alert("Error posting item: " + error.message);
     }
   };
-
 
   return (
     <View style={styles.container}>
@@ -206,7 +209,6 @@ const Listings = () => {
     </View>
   );
 };
-
 export default Listings;
 
 const styles = StyleSheet.create({

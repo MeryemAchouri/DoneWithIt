@@ -2,7 +2,7 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import FeedTopTabs from "./app/screens/Feed";
-import Listings from "./app/AddItems/Listings";
+import Listings from "./app/screens/AddNewListing";
 import Account from "./app/screens/Account";
 import { COLOR } from "./app/styles/style";
 const Tab = createBottomTabNavigator();
@@ -23,7 +23,7 @@ const MainApp = () => {
             iconName = "add-circle";
             iconColor = COLOR.primary;
           } else {
-            iconName = ""; 
+            iconName = "";
           }
 
           return (
@@ -45,7 +45,7 @@ const MainApp = () => {
         options={{
           tabBarLabel: () => null,
           tabBarIcon: ({ size }) => (
-            <Ionicons name="add-circle" size={52} color = {COLOR.primary} />
+            <Ionicons name="add-circle" size={52} color={COLOR.primary} />
           ),
           headerTitle: "",
           headerTransparent: true,

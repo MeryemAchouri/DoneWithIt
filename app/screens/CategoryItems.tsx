@@ -10,6 +10,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -19,18 +20,23 @@ import {
   getDocs,
   addDoc,
   serverTimestamp,
+  onSnapshot,
+  deleteDoc,
+  doc,
 } from "firebase/firestore";
 import { FIRESTORE_DB, FIREBASE_AUTH } from "../../FireBaseConf";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { COLOR } from "../styles/style";
+
 interface Items {
   id: string;
   photos: string[];
   title: string;
   price: string;
+  description: string;
   sellerName: string;
   category: string;
-  SellerId: string; 
+  SellerId: string;
 }
 
 interface Props {
@@ -41,39 +47,39 @@ const CategoryItems: React.FC<Props> = ({ category }) => {
   const [items, setItems] = useState<Items[]>([]);
   const [selectedItem, setSelectedItem] = useState<Items | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [descriptionVisible, setDescriptionVisible] = useState(false);
   const [messageSent, setMessageSent] = useState(false);
   const [message, setMessage] = useState("Is this still available?");
   const auth = FIREBASE_AUTH;
 
   useEffect(() => {
-    const fetchItems = async () => {
-      try {
-        const q = query(
-          collection(FIRESTORE_DB, "Categories"),
-          where("category", "==", category)
-        );
-        const querySnapshot = await getDocs(q);
+    const unsubscribe = onSnapshot(
+      query(
+        collection(FIRESTORE_DB, "Categories"),
+        where("category", "==", category)
+      ),
+      (querySnapshot) => {
         const itemsData: Items[] = querySnapshot.docs.map((doc) => {
           const data = doc.data();
-          console.log("Retrieved data: ", data); 
           return {
             id: doc.id,
             ...data,
           };
         }) as Items[];
         setItems(itemsData);
-      } catch (error) {
+      },
+      (error) => {
         console.error(`Error fetching ${category}: `, error);
       }
-    };
+    );
 
-    fetchItems();
+    return () => unsubscribe();
   }, [category]);
 
   const handleItemPress = (item: Items) => {
-    console.log("Item selected:", item);
     setSelectedItem(item);
     setModalVisible(true);
+    setDescriptionVisible(!!item.description);
   };
 
   const handleCloseModal = () => {
@@ -98,25 +104,41 @@ const CategoryItems: React.FC<Props> = ({ category }) => {
       return;
     }
 
-   const messageData = {
-     senderId: auth.currentUser.uid,
-     senderName: auth.currentUser.displayName,
-     recipientId: selectedItem.SellerId, 
-     message: message,
-     timestamp: serverTimestamp(),
-   };
+    const messageData = {
+      senderId: auth.currentUser.uid,
+      senderName: auth.currentUser.displayName,
+      recipientId: selectedItem.SellerId,
+      message: message,
+      timestamp: serverTimestamp(),
+    };
 
-   try {
-     await addDoc(collection(FIRESTORE_DB, "Messages"), messageData);
-     setMessageSent(true);
-     console.log("Message sent successfully.");
-     setTimeout(()=>{
-      setMessage("Is this still available?");
-     },3000)
-   } catch (error) {
-     console.error("Error sending message: ", error);
-   }
+    try {
+      await addDoc(collection(FIRESTORE_DB, "Messages"), messageData);
+      setMessageSent(true);
+      console.log("Message sent successfully.");
+      setTimeout(() => {
+        setMessage("Is this still available");
+      }, 3000);
+    } catch (error) {
+      console.error("Error sending message: ", error);
+    }
+  };
 
+  const handleDeleteItem = async () => {
+    if (!selectedItem) {
+      console.error("No item selected.");
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(FIRESTORE_DB, "Categories", selectedItem.id));
+      setItems(items.filter((item) => item.id !== selectedItem.id));
+      handleCloseModal();
+      Alert.alert("Item deleted successfully.");
+    } catch (error) {
+      console.error("Error deleting item: ", error);
+      Alert.alert("Error deleting item.");
+    }
   };
 
   return (
@@ -149,18 +171,24 @@ const CategoryItems: React.FC<Props> = ({ category }) => {
               >
                 <Ionicons name="close" size={25} color="#fff" />
               </TouchableOpacity>
-              <KeyboardAwareScrollView
-                
-              >
+              <KeyboardAwareScrollView>
                 <Image
                   source={{ uri: selectedItem.photos[0] }}
                   style={styles.modalImage}
                 />
                 <Text style={styles.modalTitle}>{selectedItem.title}</Text>
                 <Text style={styles.modalPrice}>{selectedItem.price} $</Text>
+                {descriptionVisible && (
+                  <View style={styles.descriptionContainer}>
+                    <Text style={styles.descriptionTitle}>Description</Text>
+                    <Text style={styles.descriptionContent}>
+                      {selectedItem.description}
+                    </Text>
+                  </View>
+                )}
                 <View style={styles.profileContainer}>
                   <Image
-                    source={require("../../assets/images/profil.png")}
+                    source={require("../../assets/images/profile.png")}
                     style={styles.profileImage}
                   />
                   <View>
@@ -175,20 +203,33 @@ const CategoryItems: React.FC<Props> = ({ category }) => {
                 <View style={styles.contactContainer}>
                   {messageSent && (
                     <Text style={styles.successMessage}>
-                      Message was sent to the sender.
+                      Message sent to seller 
                     </Text>
                   )}
-                  <TextInput
-                    style={styles.contactInput}
-                    value={message}
-                    onChangeText={setMessage}
-                  />
-                  <TouchableOpacity
-                    style={styles.contactButton}
-                    onPress={handleContactSeller}
-                  >
-                    <Text style={styles.contactButtonText}>Contact Seller</Text>
-                  </TouchableOpacity>
+                  {auth.currentUser?.uid === selectedItem.SellerId ? (
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={handleDeleteItem}
+                    >
+                      <Text style={styles.deleteButtonText}>Delete Item</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <>
+                      <TextInput
+                        style={styles.contactInput}
+                        value={message}
+                        onChangeText={setMessage}
+                      />
+                      <TouchableOpacity
+                        style={styles.contactButton}
+                        onPress={handleContactSeller}
+                      >
+                        <Text style={styles.contactButtonText}>
+                          Contact Seller
+                        </Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
                 </View>
               </KeyboardAwareScrollView>
             </View>
@@ -262,7 +303,6 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     zIndex: 1,
   },
-
   modalImage: {
     width: "100%",
     height: 300,
@@ -277,7 +317,20 @@ const styles = StyleSheet.create({
     marginLeft: 20,
     fontSize: 20,
     color: COLOR.secondary,
-    marginBottom: 30,
+    marginBottom: 15,
+  },
+  descriptionContainer: {
+    marginLeft: 20,
+    marginBottom: 15,
+  },
+  descriptionTitle: {
+    fontSize: 18,
+    color: COLOR.primary,
+    marginBottom: 7,
+  },
+  descriptionContent: {
+    fontSize: 15,
+    color: "grey",
   },
   profileContainer: {
     marginLeft: 20,
@@ -322,6 +375,18 @@ const styles = StyleSheet.create({
     width: "90%",
   },
   contactButtonText: {
+    color: "white",
+    fontSize: 16,
+    textAlign: "center",
+  },
+  deleteButton: {
+    backgroundColor: "#FF4D4D",
+    padding: 15,
+    borderRadius: 25,
+    width: "90%",
+    marginBottom: 15,
+  },
+  deleteButtonText: {
     color: "white",
     fontSize: 16,
     textAlign: "center",
